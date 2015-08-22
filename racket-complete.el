@@ -1,4 +1,4 @@
-;;; racket-complete.el
+;;; racket-complete.el -*- lexical-binding: t -*-
 
 ;; Copyright (c) 2013-2015 by Greg Hendershott.
 ;; Portions Copyright (C) 1985-1986, 1999-2013 Free Software Foundation, Inc.
@@ -59,19 +59,18 @@ See `racket--invalidate-completion-cache' and
               (point)))
         (scan-error pos)))))
 
-(defun racket--completion-table (f)
-  (if (fboundp 'completion-table-with-cache)
-      (completion-table-with-cache f)
-    (completion-table-dynamic f)))
-
-(defun racket-complete-at-point (&optional predicate)
+(defun racket-complete-at-point (&optional _predicate)
   (with-syntax-table racket-mode-syntax-table ;probably don't need this??
-    (let* ((beg (racket--complete-prefix-begin))
-           (end (or (racket--complete-prefix-end beg) beg)))
-      (and (> end beg)
+    (let* ((beg    (racket--complete-prefix-begin))
+           (end    (or (racket--complete-prefix-end beg) beg))
+           (prefix (and (> end beg) (buffer-substring-no-properties beg end)))
+           (cmps   (and prefix (completion-table-dynamic
+                                (lambda (_)
+                                  (racket--complete-prefix prefix))))))
+      (and cmps
            (list beg
                  end
-                 (racket--completion-table #'racket--complete-prefix)
+                 cmps
                  :predicate #'identity
                  :company-docsig #'racket-get-type
                  :company-doc-buffer #'racket--do-describe
